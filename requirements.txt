@@ -1,7 +1,7 @@
 streamlit
-langchain
-faiss-cpu
-sentence-transformers
-google-generativeai
-duckduckgo-search
 PyMuPDF
+langchain
+sentence-transformers
+duckduckgo-search
+langchain-google-genai
+chromadb
