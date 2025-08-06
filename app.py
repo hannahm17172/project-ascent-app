@@ -2,11 +2,15 @@ import streamlit as st
 import os
 import fitz  # PyMuPDF
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import Chroma  # Switched from FAISS to ChromaDB
-from langchain.embeddings import HuggingFaceInstructEmbeddings
-from langchain_google_genai import ChatGoogleGenerativeAI  # Modern library for Gemini
+from langchain_community.vectorstores import Chroma
+# CORRECTED IMPORT: Using a more standard and lightweight embedding model
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
-from duckduckgo_search import DDGS
+from langchain_community.tools import DuckDuckGoSearchRun
+from langchain.schema.runnable import RunnablePassthrough
+from langchain.schema.output_parser import StrOutputParser
+
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -19,8 +23,9 @@ st.set_page_config(
 # --- Caching Functions for Performance ---
 @st.cache_resource
 def load_embedding_model():
-    """Loads a powerful sentence-transformer model for creating embeddings."""
-    return HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-large")
+    """Loads a lightweight and efficient sentence-transformer model."""
+    # This model is small, fast, and effective for prototyping.
+    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 @st.cache_resource
 def load_llm():
@@ -29,7 +34,6 @@ def load_llm():
     if not api_key:
         st.error("GOOGLE_API_KEY environment variable not set. Please set it in your Streamlit secrets.")
         return None
-    # Use the modern ChatGoogleGenerativeAI for Gemini
     return ChatGoogleGenerativeAI(model="gemini-pro", google_api_key=api_key, temperature=0.7)
 
 # --- Core Functions ---
@@ -61,7 +65,6 @@ def create_vector_store(text_chunks, embedding_model):
     if not text_chunks:
         return None
     try:
-        # Chroma is a reliable, file-based vector store.
         vector_store = Chroma.from_texts(texts=text_chunks, embedding=embedding_model)
         return vector_store
     except Exception as e:
@@ -69,11 +72,10 @@ def create_vector_store(text_chunks, embedding_model):
         return None
 
 def perform_web_search(query):
-    """Performs a web search using DuckDuckGo and returns formatted results."""
+    """Performs a web search using DuckDuckGo."""
     try:
-        with DDGS() as ddgs:
-            results = [r for r in ddgs.text(query, max_results=5)]
-            return "\n".join([f"Snippet: {res.get('body', 'N/A')}\nURL: {res.get('href', 'N/A')}\n---" for res in results])
+        search = DuckDuckGoSearchRun()
+        return search.run(query)
     except Exception as e:
         return f"Web search failed: {e}"
 
@@ -125,44 +127,52 @@ def main():
 
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                response_context = ""
+                final_answer = ""
+                try:
+                    context = ""
+                    if 'vector_store' in st.session_state and st.session_state.vector_store:
+                        retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 3})
+                        docs = retriever.get_relevant_documents(prompt)
+                        if docs:
+                            context += "**From your documents:**\n\n" + "\n\n".join([doc.page_content for doc in docs]) + "\n\n---\n\n"
 
-                if 'vector_store' in st.session_state and st.session_state.vector_store:
-                    retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 3})
-                    docs = retriever.get_relevant_documents(prompt)
-                    if docs:
-                        context_from_docs = "\n\n".join([doc.page_content for doc in docs])
-                        response_context += f"**From your documents:**\n\n{context_from_docs}\n\n---\n\n"
+                    if st.session_state.enable_web_search:
+                        web_results = perform_web_search(prompt)
+                        if web_results:
+                            context += f"**From live web search:**\n\n{web_results}\n\n---\n\n"
 
-                if st.session_state.enable_web_search:
-                    web_results = perform_web_search(prompt)
-                    if web_results:
-                        response_context += f"**From live web search:**\n\n{web_results}\n\n---\n\n"
+                    if context:
+                        template = """
+                        You are a world-class AI research assistant for PwC. Your task is to synthesize information from the provided context to answer the user's question.
+                        Provide a comprehensive, well-structured answer. If the context contains conflicting information, point it out.
+                        Always cite your sources clearly.
 
-                if response_context:
-                    template = """
-                    You are a world-class AI research assistant for PwC. Your task is to synthesize information from the provided context to answer the user's question.
-                    Provide a comprehensive, well-structured answer. If the context contains conflicting information, point it out.
-                    Always cite your sources clearly.
+                        CONTEXT:
+                        {context}
 
-                    CONTEXT:
-                    {context}
+                        QUESTION:
+                        {question}
 
-                    QUESTION:
-                    {question}
-
-                    ANSWER:
-                    """
-                    prompt_template = PromptTemplate(template=template, input_variables=["context", "question"])
-                    llm = load_llm()
-                    
-                    if llm:
-                        chain = prompt_template | llm
-                        final_answer = chain.invoke({"context": response_context, "question": prompt}).content
+                        ANSWER:
+                        """
+                        prompt_template = PromptTemplate(template=template, input_variables=["context", "question"])
+                        llm = load_llm()
+                        
+                        if llm:
+                            chain = (
+                                {"context": RunnablePassthrough(), "question": RunnablePassthrough()}
+                                | prompt_template
+                                | llm
+                                | StrOutputParser()
+                            )
+                            final_answer = chain.invoke({"context": context, "question": prompt})
+                        else:
+                            final_answer = "The Language Model is not available. Please check your API key."
                     else:
-                        final_answer = "The Language Model is not available. Please check your API key."
-                else:
-                    final_answer = "I don't have enough information to answer. Please build a knowledge base or enable web search."
+                        final_answer = "I don't have enough information to answer. Please build a knowledge base or enable web search."
+
+                except Exception as e:
+                    final_answer = f"An error occurred: {e}"
 
                 st.markdown(final_answer)
                 st.session_state.messages.append({"role": "assistant", "content": final_answer})
