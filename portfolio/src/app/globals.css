@@ -1,0 +1,328 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================================================
+   BASE STYLES
+   ======================================================================== */
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --accent: #ea580c;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ========================================================================
+   CUSTOM UTILITIES
+   ======================================================================== */
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Dot grid pattern for decorative backgrounds */
+.dot-pattern {
+  background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Subtle gradient mesh for hero */
+.hero-gradient {
+  background: linear-gradient(
+    135deg,
+    #0f172a 0%,
+    #1e293b 40%,
+    #0f172a 70%,
+    #1a1a2e 100%
+  );
+}
+
+/* Accent underline decoration */
+.accent-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.accent-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* Flow connector line between workflow steps */
+.flow-connector {
+  position: relative;
+}
+
+.flow-connector::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -1.5rem;
+  width: 1.5rem;
+  height: 2px;
+  background: #cbd5e1;
+}
+
+/* ========================================================================
+   PRINT / PDF EXPORT ENGINE
+   This is the most critical stylesheet section.
+   When Ctrl+P is pressed, the layout transforms into a clean PwC-style
+   case study document suitable for professional distribution.
+   ======================================================================== */
+
+@media print {
+  /* ---- Reset all animation & transition ---- */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+
+  /* ---- Page setup ---- */
+  @page {
+    size: A4;
+    margin: 1.8cm 2cm;
+  }
+
+  /* ---- Body ---- */
+  html,
+  body {
+    background: white !important;
+    color: #0f172a !important;
+    font-size: 10.5pt !important;
+    line-height: 1.45 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ---- Hide interactive / non-print elements ---- */
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  /* ---- Show print-only elements ---- */
+  .print-only {
+    display: block !important;
+  }
+
+  /* ---- Force white backgrounds on colored sections ---- */
+  .print-bg-white {
+    background: white !important;
+    color: #0f172a !important;
+  }
+
+  /* ---- Remove all shadows ---- */
+  [class*="shadow"] {
+    box-shadow: none !important;
+  }
+
+  /* ---- Remove border radius for clean print ---- */
+  .print-no-radius {
+    border-radius: 0 !important;
+  }
+
+  /* ---- Expand containers to full width ---- */
+  .max-w-6xl,
+  .max-w-7xl,
+  .max-w-5xl,
+  .max-w-4xl,
+  .container {
+    max-width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* ---- Prevent content from being cut across pages ---- */
+  .print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ---- Force page break before a section ---- */
+  .print-page-break {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  /* ---- Collapse grids to single column for print ---- */
+  .print-single-col {
+    display: block !important;
+  }
+
+  .print-single-col > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* ---- Print-specific spacing ---- */
+  .print-compact {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  /* ---- Hero section becomes a print header ---- */
+  .print-hero {
+    background: white !important;
+    color: #0f172a !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  .print-hero h1 {
+    font-size: 22pt !important;
+    color: #0f172a !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .print-hero p {
+    color: #475569 !important;
+    font-size: 11pt !important;
+  }
+
+  /* ---- Metric cards: inline row for print ---- */
+  .print-metrics-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+  }
+
+  .print-metrics-row > * {
+    flex: 1 !important;
+    border-right: 1px solid #e2e8f0 !important;
+    padding: 0.5rem 0.75rem !important;
+    text-align: center !important;
+  }
+
+  .print-metrics-row > *:last-child {
+    border-right: none !important;
+  }
+
+  /* ---- Workflow cards: structured case study rows ---- */
+  .print-workflow-card {
+    border: 1px solid #e2e8f0 !important;
+    padding: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    background: white !important;
+  }
+
+  /* ---- Flow steps: horizontal table layout for print ---- */
+  .print-flow-steps {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    gap: 0 !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .print-flow-step {
+    border-right: 1px solid #e2e8f0 !important;
+    padding: 0.5rem !important;
+    background: white !important;
+  }
+
+  .print-flow-step:last-child {
+    border-right: none !important;
+  }
+
+  /* ---- Project cards: full-width case study rows ---- */
+  .print-project-card {
+    border: 1px solid #e2e8f0 !important;
+    padding: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    background: white !important;
+    border-radius: 0 !important;
+  }
+
+  /* ---- Section headings: clean print styling ---- */
+  .print-section-heading {
+    font-size: 16pt !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    border-bottom: 2px solid #ea580c !important;
+    padding-bottom: 0.25rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* ---- Case view: clean text layout ---- */
+  .print-case-section {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* ---- Tags: simple comma-separated for print ---- */
+  .print-tags {
+    display: inline !important;
+    font-size: 9pt !important;
+    color: #64748b !important;
+  }
+
+  .print-tags > * {
+    display: inline !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-tags > *::after {
+    content: " · ";
+  }
+
+  .print-tags > *:last-child::after {
+    content: "";
+  }
+
+  /* ---- Links: show URL for print ---- */
+  a[href]::after {
+    content: none !important;
+  }
+
+  /* ---- Accent border for print section dividers ---- */
+  .print-accent-border {
+    border-left: 3px solid #ea580c !important;
+    padding-left: 0.75rem !important;
+  }
+
+  /* ---- Print footer ---- */
+  .print-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 8pt;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 0.25rem;
+  }
+}
